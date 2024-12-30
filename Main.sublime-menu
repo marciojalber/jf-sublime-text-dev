@@ -1,0 +1,42 @@
+[
+    {
+        "caption": "Preferences",
+        "mnemonic": "n",
+        "id": "preferences",
+        "children":
+        [
+            {
+                "caption": "Package Settings",
+                "mnemonic": "P",
+                "id": "package-settings",
+                "children":
+                [
+                    {
+                        "caption": "JF",
+                        "children":
+                        [
+                            {
+                                "caption": "Definições",
+                                "command": "edit_settings",
+                                "args":
+                                {
+                                    "base_file": "${packages}/JF/settings/JF.sublime-settings",
+                                    "default": "// Escreva suas definições aqui para sobrescrever o conteúdo de \"JF/settings/JF.sublime-settings\"\n{\n\t$0\n}\n"
+                                }
+                            },
+                            {
+                                "caption": "Teclas de atalho",
+                                "command": "edit_settings",
+                                "args":
+                                {
+                                    "base_file": "${packages}/JF/settings/Default ($platform).sublime-keymap",
+                                    "default": "[\n\t$0\n]\n"
+                                }
+                            }
+                        ]
+                    }
+                ]
+            }
+        ]
+    }
+]
