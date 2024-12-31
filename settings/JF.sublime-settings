@@ -1,4 +1,7 @@
 {
-  "teste": {
-  },
+  "rootDir": "C:\\xampp\\htdocs",
+  "git" : {
+    "reset": "git reset --hard HEAD~1",
+    "mergeRequest": "git add . && git commit -m \"Atualizacao\" && git push origin homo82 && git checkout prod82 && git merge homo82 && git push rogin prod82 && git checkout homo82"
+  }
 }

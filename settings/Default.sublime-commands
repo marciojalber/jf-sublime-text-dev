@@ -1,0 +1,24 @@
+[
+  {
+    "caption": "JF: Criar Regra de negócio",
+    "command": "create_jf_rule"
+  },
+  {
+      "caption": "JF: Definições",
+      "command": "edit_settings",
+      "args":
+      {
+          "base_file": "${packages}/JF/settings/JF.sublime-settings",
+          "default": "// Escreva suas definições aqui para sobrescrever o conteúdo de \"JF/settings/JF.sublime-settings\"\n{\n\t$0\n}\n"
+      }
+  },
+  {
+      "caption": "JF: Teclas de atalho",
+      "command": "edit_settings",
+      "args":
+      {
+          "base_file": "${packages}/JF/settings/Default ($platform).sublime-keymap",
+          "default": "[\n\t$0\n]\n"
+      }
+  }
+]

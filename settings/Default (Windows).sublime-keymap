@@ -1,3 +1,7 @@
 [
-    { "keys": ["ctrl+shift+r"], "command": "create_new_jf_rule" },
+    { "keys": ["ctrl+j","ctrl+r"], "command": "create_jf_rule" },
+    { "keys": ["ctrl+j","ctrl+a"], "command": "run_autodoc" },
+    { "keys": ["ctrl+j","ctrl+m"], "command": "git", "args": {"cmd": "mergeRequest"} },
+    { "keys": ["ctrl+j","ctrl+c"], "command": "git", "args": {"cmd": "reset"} },
+    { "keys": ["ctrl+j","ctrl+j"], "command": "import_jf_phar" }
 ]
