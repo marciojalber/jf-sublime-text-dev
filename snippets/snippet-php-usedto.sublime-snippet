@@ -1,0 +1,7 @@
+<snippet>
+	<content><![CDATA[
+use App\DTO\\${1:}\\${2:}\\${2:}__Model
+]]></content>
+	<tabTrigger>usedto</tabTrigger>
+	<scope>source.php</scope>
+</snippet>

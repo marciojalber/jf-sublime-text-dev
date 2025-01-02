@@ -1,0 +1,92 @@
+<snippet>
+	<content><![CDATA[
+
+namespace App${TM_DIRECTORY/(.*?App\/|\/)/\\/g};
+
+use App\DTO\Servidores\Servidor\Servidor__Model;
+use App\DTO\Servidores\Unidade\Unidade__Model;
+
+use App\Providers\Session\Session__Provider;
+use App\Types\DataHora\DataHora__Type;
+
+use JF\Exceptions\WarningException as Warning;
+
+/**
+ * ${1:Definição da regra de negócio}.
+ */
+#[userStory]
+class Service extends \App\Services\Service
+{
+    use \JF\HTTP\HTTP_Service_Trait;
+
+    /**
+     * Implementa a funcionalidade.
+     */
+    public function execute()
+    {
+        \$this->usuario  = Session__Provider::usuario2();
+
+        \$this->validarDados();
+        \$this->obterItem();
+        \$this->aplicarRegrasDeNegocio();
+        \$this->realizarOperacao();
+
+        return [
+        	'item' => \$this->item,
+        ];
+    }
+
+    /**
+     * Valida os dados da requisição.
+     */
+    private function execute()
+    {
+    	if ( empty( \$this->dataIni ) )
+    		throw new Warning( "Data de início não informada." );
+
+    	if ( !DataHora__Type::validarData( \$this->dataIni ) )
+    		throw new Warning( "Data de início inválida." );
+
+    	if ( empty( \$this->dataFim ) )
+    		throw new Warning( "Data fim não informada." );
+
+    	if ( !DataHora__Type::validarData( \$this->dataFim ) )
+    		throw new Warning( "Data fim inválida." );
+    }
+
+    /**
+     * Valida os dados da requisição.
+     */
+    private function obterItem()
+    {
+    	\$this->item = Servidor__Model::dao()
+    		->onEmpty( 'Servidor não informado.' )
+    		->onFail( 'Servidor não encontrado.' )
+    		->find( \$this->id ?? null );
+    }
+
+    /**
+     * Aplica as regras do negócio.
+     */
+    private function aplicarRegrasDeNegocio()
+    {
+        \$this->applyRules();
+    }
+
+    /**
+     * Realiza a operação.
+     */
+    private function realizarOperacao()
+    {
+    	\$this->item
+    		->set( 'dataIni', \$this->dataIni )
+    		->set( 'dataFim', \$this->dataFim )
+    		->onFail( 'Não foi possível executar a operação.' )
+    		->save();
+    }
+}
+
+]]></content>
+	<tabTrigger>service</tabTrigger>
+	<scope>source.php</scope>
+</snippet>

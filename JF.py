@@ -1,77 +1,48 @@
 __version__ = "v0.9.12"
 
 import sublime
-import sublime_plugin
+from sublime_plugin import TextCommand, WindowCommand, EventListener
 
 import os
 import shutil
 
 import re
-import time
 import json
 
-from .src import Utils
-
-PACKAGE_PATH    = sublime.packages_path()
-SETTINGS_PATH   = PACKAGE_PATH + '\\' + __package__ + '\\settings\\JF.sublime-settings'
-
-# Indica a pasta raiz para projetos em JF
-def now():
-    return time.strftime('%X' )
-
-# Indica a pasta raiz para projetos em JF
-def getJFrootPath(path):
-    root_dir    = Settings().get('rootDir')
-    repetir     = 1
-    base_path   = None
-
-    if path.find( root_dir ) == -1:
-        return base_path
-
-    while repetir:
-        jf_assign       = path + '\\jf-signature'
-
-        if os.path.exists( jf_assign ):
-            repetir     = 0
-            base_path     = path
-
-        if path == root_dir:
-            repetir     = 0
-
-        path            = os.path.dirname( path )
-
-    return base_path
-
-# Indica se uma pasta contém determinado fragmento de texto
-def pathContains(path, needle):
-    return path.find( needle ) != -1
-
+from .src.dt import dt
+from .src.File import File
+from .src.Dir import Dir
+from .src.Settings import Settings
+from .src.Utils import *
 
 # Classe base para as demais
-class BaseClass(sublime_plugin.TextCommand):
-    JF_ROOT_PATH    = None
+class MySublime:
     PANEL_NAME      = 'JF Results'
 
-    def output(self, text=''):
-        panel = self.view.window().find_output_panel(self.PANEL_NAME)
+    def output(self, text):
+        panel = self.view.window().find_output_panel(MySublime.PANEL_NAME)
         
         if not panel:
-            panel   = self.view.window().create_output_panel(self.PANEL_NAME)
+            panel   = self.view.window().create_output_panel(MySublime.PANEL_NAME)
             #panel.set_scratch(True)  # avoids prompting to save
             panel.settings().set("word_wrap", "false")
             panel.run_command('select_all')
             panel.run_command('left_delete')
 
         text        = re.sub('^', '           ', str(text),flags = re.MULTILINE)
-        intro       = now() + ' - ' + type(self).__name__
+        intro       = dt.now() + ' - ' + type(self).__name__
         intro       += ":\n" if len(text) else " - [EMPTY]\n"
         text        += "\n\n" if len(text) else ""
 
         panel.set_read_only(False)
         panel.run_command('append', {'characters': intro + text})
         panel.set_read_only(True)
-        self.view.window().run_command("show_panel", {"panel": 'output.' + self.PANEL_NAME})
+        self.view.window().run_command("show_panel", {"panel": '.' + MySublime.PANEL_NAME})
         panel.show(panel.size())
+
+# Classe base para as demais
+class BaseClass(TextCommand):
+    JF_ROOT_PATH    = None
 
     def path(self):
         return os.path.dirname(self.view.file_name())
@@ -79,66 +50,24 @@ class BaseClass(sublime_plugin.TextCommand):
     def alert(self, text):
         sublime.message_dialog('%s' % (text))
 
-    def checkJFProject(self):
-        root_dir    = Settings().get('rootDir')
-      
-        if not pathContains( self.path(), root_dir ):
-            sublime.error_message("Execute o script a partir da pasta de aplicações - " + root_dir)
-            return False
-        
-        if not getJFrootPath( self.path() ):
-            sublime.error_message( "Execute o script a partir de um projeto feito em JF." )
-            return False
-
-        return True
-
-# Capturar definições em arquivo de configurações
-class Settings:
-    def __init__(self):
+# Classe base para criar regras de negócio
+class CreateJfRuleTemplate:
+    def __init__( self, window, filename ):
+        self.window     = window
+        self.filename   = filename
         return
 
-    def all(self):
-        if os.path.exists(SETTINGS_PATH):
-            self.items = Utils.parseJson(SETTINGS_PATH)
-        else:
-            self.items = {}
-
-        return self.items
-
-    def get(self, key_path='', default=None):
-        items   = self.all()
-
-        if len(key_path) <= 0:
-            return
-
-        res     = items
-        keys    = key_path.split('.')
-
-        for key in keys:
-            res = res.get(key)
-            
-            if res is None:
-                return default
-        
-        return res
-
-
-# Criar regra de negócio
-class CreateJfRule(BaseClass):
-    def run(self, edit):
-        if not pathContains( self.path(), "App\\Services" ):
-            return self.alert( "Operação só é permitida na pasta App\\Services." )
-
-        self.view.window().show_input_panel(
+    def run( self ):
+        self.window.show_input_panel(
             "Nome do arquivo:",
             "",
             self.definirParametros,
             None,
-            None
+            "Ex: UsuarioTemPermissao"
         )
 
     def definirParametros(self, file_path):
-        current_file_path   = self.view.file_name()
+        current_file_path   = self.filename
         current_directory   = os.path.dirname(current_file_path)
         local_path          = current_directory[current_directory.rfind('\\')+1:]
         self.rule_class     = file_path + '__Rule'
@@ -153,9 +82,13 @@ class CreateJfRule(BaseClass):
                 self.capturarDescricao()
             else:
                 options = ["Sim", "Não"]
-                self.view.window().show_quick_panel(
+                self.window.show_quick_panel(
                     options,
-                    self.sobrescerver
+                    self.sobrescerver,
+                    0,
+                    0,
+                    0,
+                    "Deseja sobrescrever o arquivo existente?"
                 )
         except Exception as e:
             sublime.error_message("Erro ao criar a regra de negócio: :s" % (str(e)))
@@ -165,7 +98,7 @@ class CreateJfRule(BaseClass):
             self.capturarDescricao()
 
     def capturarDescricao(self):
-        self.view.window().show_input_panel(
+        self.window.show_input_panel(
             "Descrição da regra:",
             "Usuário sem permissão para executar a operação.",
             self.criarArquivo,
@@ -181,32 +114,43 @@ class CreateJfRule(BaseClass):
         ns      = ns[0:ns.rfind('\\')]
         content = (get_template() % (ns, desc, self.rule_class))
 
-        if not os.path.exists(self.rule_path):
+        if not os.path.exists(path):
             os.mkdir(path)
 
         with open(self.rule_path, 'w') as f:
             f.write(content)
-        self.view.window().open_file(self.rule_path)
+        self.window.open_file(self.rule_path)
+
+# Criar regra de negócio
+class CreateJfRule(BaseClass):
+    def run(self, edit):
+        filename   = self.view.file_name()
+        window     = self.view.window()
+
+        if not Dir.pathContains( self.path(), "App\\Services" ):
+            return self.alert( "Operação só é permitida na pasta App\\Services." )
+
+        CreateJfRuleTemplate( window, filename ).run()
 
 
-# Documentar um projeto em JF
+# Ativar comandos do Git
 class Git(BaseClass):
     def run(self, edit, cmd=None):
-        if not self.checkJFProject():
+        if not Dir.checkJFProject(self.path()):
             return
 
-        base_path   = getJFrootPath( self.path() );
+        base_path   = Dir.getJFrootPath( self.path() );
         cmd         = 'cd ' + base_path + ' && ' + Settings().get('git.' + cmd)
-        self.output( os.popen( cmd ).read() )
+        MySublime.output( self, os.popen( cmd ).read() )
 
 
 # Importa o pacote JF para o Portal PMF
 class ImportJfPhar(BaseClass):
     def run(self, edit):
-        if not self.checkJFProject():
+        if not Dir.checkJFProject(self.path()):
             return
 
-        base_path   = getJFrootPath( self.path() );
+        base_path   = Dir.getJFrootPath( self.path() );
         index_path  = base_path + '\\index.php';
         jfc_path    = base_path + '\\jfc';
         jf_path     = os.path.dirname( base_path ) + '\\jf-pmf\\dist'
@@ -214,7 +158,7 @@ class ImportJfPhar(BaseClass):
         old_jfnames = []
         
         cmd         = 'cd ' + os.path.dirname( jf_path ) + ' && php dist.php'
-        self.output( os.popen( cmd ).read() )
+        MySublime.output( self, os.popen( cmd ).read() )
 
         for filename in os.listdir(jf_path):
             if not new_jfname:
@@ -260,7 +204,7 @@ class ImportJfPhar(BaseClass):
             f.write( jfc_content )
             f.close()
         
-        self.output( 'Novo JF copiado para o Portal PMF' )
+        MySublime.output( self, 'Novo JF copiado para o Portal PMF' )
         return
 
 '''
@@ -275,7 +219,7 @@ class RunAutodoc(BaseClass):
     contexts = ["domain", "models", "pages", "routines"]
 
     def run(self, edit, context=None):
-        if not self.checkJFProject():
+        if not Dir.checkJFProject(self.path()):
             return
 
         self.view.window().show_quick_panel(
@@ -294,13 +238,100 @@ class RunAutodoc(BaseClass):
         self.executarAutodoc(self.path(), index)
     
     def executarAutodoc(self, path, index):
-        base_path   = getJFrootPath( path );
+        base_path   = Dir.getJFrootPath( path );
         cmd         = 'cd ' + base_path + ' && php cmd\\autodoc.php -r -c:%s' % (self.contexts[index])
-        self.output( os.popen( cmd ).read() )
+        MySublime.output( self, os.popen( cmd ).read() )
+
+# Exclui o arquivo da janela ativa
+class ExcluirArquivo(TextCommand):
+    def run(self, edit):
+        options = ["Nada", "Excluir o arquivo", "Excluir a pasta"]
+        self.view.window().show_quick_panel(
+            options,
+            self.excluir,
+            0,
+            0,
+            0,
+            "Você está prestes a excluir um documento. O que deseja fazer?"
+        )
+
+    def excluir(self, index):
+
+        if not index:
+            return
+
+        if index == 1:
+            os.remove( self.view.file_name() )
+
+        if index == 2:
+            path = os.path.dirname( self.view.file_name() )
+            self.limparPasta( path )
+
+    def limparPasta( self, path ):
+        for (item_path, dirs, files) in os.walk(path):
+            for item in dirs:
+                self.limparPasta( path + '\\' + item )
+
+            for item in files:
+                os.remove( path + '\\' + item )
+
+            break
+
+        shutil.rmtree( path )
+
+
+''' MENUS DE CONTEXTO '''
+class DisableContextmenu:
+    pass
+
+class CreateJfRuleContextmenu(WindowCommand):
+    def is_enabled(self, paths):
+        allow_folder    = "\\App\\Services"
+        allow_file      = "Service.php"
+        error_files     = []
+
+        for path in paths:
+            if path.find( allow_folder ) == -1 or os.path.basename( path ) != allow_file:
+                error_files.append( path )
+        
+        if len(error_files):
+            print( "Não é permitido criar regra de negócio para os arquivos: ", error_files )
+            return False
+        
+        return True
+
+    def run(self, paths):
+        self.window.show_input_panel(
+            "Nome do arquivo:",
+            "",
+            self.definirParametros,
+            None,
+            None
+        )
+
+# Fazer merge request na pasta do projeto
+class GitMergeRequestContextmenu(WindowCommand):
+    def is_enabled(self, paths):
+        print(paths)
+
+        if len(paths) != 1:
+            return False
+        
+        if not Dir.checkJFProject(paths[0]):
+            return False
+
+        return True
+
+
+    def run(self, paths):
+        base_path   = Dir.getJFrootPath( paths[0] );
+        cmd         = 'cd ' + base_path + ' && ' + Settings().get('git.mergeRequest')
+        os.popen( cmd ).read()
+        sublime.status_message( "Merge request concluído." )
 
 
 '''
-class EventDump(sublime_plugin.EventListener):
+class EventDump(EventListener):
     def on_new(self, view):
     def on_load(self, view):
     def on_activated(self, view):

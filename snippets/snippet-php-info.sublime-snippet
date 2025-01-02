@@ -1,0 +1,7 @@
+<snippet>
+	<content><![CDATA[
+use JF\Exceptions\InfoException as Info;
+]]></content>
+	<tabTrigger>info</tabTrigger>
+	<scope>source.php</scope>
+</snippet>

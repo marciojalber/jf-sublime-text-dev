@@ -1,0 +1,13 @@
+<snippet>
+	<content><![CDATA[
+/**
+ * ${1:Comentários}.
+ */
+private function ${2:NOME_DO_METODO}()
+{
+	
+}
+]]></content>
+	<tabTrigger>pub</tabTrigger>
+	<scope>source.php</scope>
+</snippet>

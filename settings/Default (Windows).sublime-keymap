@@ -1,4 +1,5 @@
 [
+    { "keys": ["ctrl+j","ctrl+d"], "command": "excluir_arquivo" },
     { "keys": ["ctrl+j","ctrl+r"], "command": "create_jf_rule" },
     { "keys": ["ctrl+j","ctrl+a"], "command": "run_autodoc" },
     { "keys": ["ctrl+j","ctrl+m"], "command": "git", "args": {"cmd": "mergeRequest"} },

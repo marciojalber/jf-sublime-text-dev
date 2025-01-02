@@ -1,0 +1,30 @@
+[
+    {
+        "caption": "-",
+        "context": [
+        ]
+    },
+    {
+        "caption": "-- COMANDOS DO JF --",
+        "command": "disable_contextmenu",
+        "is_enabled": true
+    },
+    {
+        "caption": "Nova regra de negócio",
+        "command": "create_jf_rule_contextmenu",
+        "args": {
+            "paths": []
+        },
+        "context": [
+            { "key": "side_bar_visible", "operator": "equal", "operand": true },
+            { "key": "side_bar_selected_paths", "operator": "not_equal", "operand": [] }
+        ]
+    },
+    {
+        "caption": "Git Merge Request",
+        "command": "git_merge_request_contextmenu",
+        "args": {
+            "paths": [],
+        }
+    },
+]
